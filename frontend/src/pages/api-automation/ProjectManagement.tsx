@@ -18,6 +18,7 @@ import { projectsApi } from '@/api/client';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface Project {
     id: number;
@@ -75,7 +76,7 @@ export default function ProjectManagement() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
-            success('添加成功');
+            success('创建成功');
         },
         onError: () => error('创建失败')
     });
@@ -159,12 +160,12 @@ export default function ProjectManagement() {
                         <Loader2 className="w-6 h-6 animate-spin mr-2" /> 加载中...
                     </div>
                 ) : (
-                    <table className="w-full text-left">
+                    <table className="w-full text-left table-fixed">
                         <thead className="bg-slate-800/50 border-b border-white/5">
                             <tr>
-                                <th className="px-6 py-4 text-sm font-medium text-slate-400">项目名称</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[200px]">项目名称</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[300px]">项目描述</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400">创建人</th>
-                                <th className="px-6 py-4 text-sm font-medium text-slate-400">项目描述</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400">创建时间</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400">更新时间</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400">操作</th>
@@ -174,9 +175,20 @@ export default function ProjectManagement() {
                             {projects.length > 0 ? (
                                 projects.map((project: Project) => (
                                     <tr key={project.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium text-white group-hover:text-cyan-400 transition-colors">{project.name}</div>
+                                        <td className="px-6 py-4 w-[200px]">
+                                            <Tooltip content={project.name} position="top">
+                                                <span className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full">
+                                                    {project.name}
+                                                </span>
+                                            </Tooltip>
                                             <div className="text-xs text-slate-500 mt-1 font-mono">#{project.key}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-400 w-[300px]">
+                                            <Tooltip content={project.description || '-'} position="top">
+                                                <span className="truncate block w-full">
+                                                    {project.description || '-'}
+                                                </span>
+                                            </Tooltip>
                                         </td>
                                         <td className="px-6 py-4 text-slate-400">
                                             <div className="flex items-center gap-2">
@@ -186,45 +198,45 @@ export default function ProjectManagement() {
                                                 <span className="text-sm">{project.owner || 'Admin'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-400">
-                                            {project.description || '-'}
-                                        </td>
                                         <td className="px-6 py-4 text-sm text-slate-500">
                                             {formatDate(project.created_at)}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-500">
                                             {formatDate(project.updated_at)}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => openEditModal(project)}
-                                                    className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
-                                                    title="编辑"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <Link
-                                                    to={`/api/projects/${project.id}/datasources`}
-                                                    className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors"
-                                                    title="数据库配置"
-                                                >
-                                                    <Database className="w-4 h-4" />
-                                                </Link>
-                                                <button
-                                                    onClick={() => { setProjectToDelete(project); setIsDeleteOpen(true); }}
-                                                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                                                    title="删除"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                <Tooltip content="编辑" position="top">
+                                                    <button
+                                                        onClick={() => openEditModal(project)}
+                                                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="数据库配置" position="top">
+                                                    <Link
+                                                        to={`/api/projects/${project.id}/datasources`}
+                                                        className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Database className="w-4 h-4" />
+                                                    </Link>
+                                                </Tooltip>
+                                                <Tooltip content="删除" position="top">
+                                                    <button
+                                                        onClick={() => { setProjectToDelete(project); setIsDeleteOpen(true); }}
+                                                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={5}>
+                                    <td colSpan={6}>
                                         <EmptyState
                                             title="暂无项目"
                                             description="创建一个项目开始您的自动化测试之旅"
