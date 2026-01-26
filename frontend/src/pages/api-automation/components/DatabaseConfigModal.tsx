@@ -73,6 +73,8 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
             success('添加成功')
+            // 立即刷新查询
+            queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
             onClose()
         },
         onError: () => error('添加数据源失败')
@@ -83,6 +85,8 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
             success('编辑成功')
+            // 立即刷新查询
+            queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
             onClose()
         },
         onError: () => error('更新数据源失败')
@@ -93,16 +97,23 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
             error('请输入主机地址和端口')
             return
         }
+
+        // 提示用户：如果要测试数据库连接，需要提供用户名和密码
+        if (!form.username || !form.password) {
+            error('请输入用户名和密码以测试数据库连接')
+            return
+        }
+
         setIsTesting(true)
         setTestResult(null)
         try {
             const res = await projectsApi.testDataSource(form)
             setTestResult(res.data)
             if (res.data.success) {
-                success('连接测试成功')
+                success('连接成功')
                 setHasTestedSuccess(true)
             } else {
-                error('连接测试失败: ' + res.data.message)
+                error(res.data.message)
                 setHasTestedSuccess(false)
             }
         } catch (e) {
@@ -114,7 +125,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
     }
 
     const handleSubmit = () => {
-        if (!form.name || !form.db_type || !form.host || !form.port || !form.username) {
+        if (!form.name || !form.db_type || !form.host || !form.port || !form.username || !form.password || !form.db_name || !form.variable_name) {
             error('请填写所有必填项')
             return
         }
@@ -174,12 +185,12 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label className="text-xs text-slate-400 mb-1.5 block">引用变量</label>
+                                    <label className="text-xs text-slate-400 mb-1.5 block">引用变量 *</label>
                                     <input
                                         type="text"
                                         value={form.variable_name}
                                         onChange={e => { setForm({ ...form, variable_name: e.target.value }); setHasTestedSuccess(false); }}
-                                        placeholder="如：DB_PROD（可选，用于环境引用）"
+                                        placeholder="如：DB_PROD（用于环境引用）"
                                         className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600"
                                     />
                                 </div>
@@ -225,7 +236,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1.5 block">数据库名称</label>
+                                    <label className="text-xs text-slate-400 mb-1.5 block">数据库名称 *</label>
                                     <input
                                         type="text"
                                         value={form.db_name}
@@ -247,13 +258,13 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label className="text-xs text-slate-400 mb-1.5 block">密码</label>
+                                    <label className="text-xs text-slate-400 mb-1.5 block">密码 *</label>
                                     <div className="relative">
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             value={form.password}
                                             onChange={e => { setForm({ ...form, password: e.target.value }); setHasTestedSuccess(false); }}
-                                            placeholder={editData ? "如果不修改密码请留空" : "请输入密码"}
+                                            placeholder={editData ? "如果不修改密码请留空" : "请输入密码（测试连接必需）"}
                                             className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 pr-10"
                                         />
                                         <button
@@ -279,9 +290,10 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                         <div className="p-6 pt-0 flex gap-4">
                             <button
                                 onClick={handleTest}
-                                disabled={isTesting || !form.host}
-                                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 
+                                disabled={isTesting || !form.host || !form.username || !form.password}
+                                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2
                                     ${hasTestedSuccess ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}
+                                    disabled:opacity-50 disabled:cursor-not-allowed
                                 `}
                             >
                                 {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}

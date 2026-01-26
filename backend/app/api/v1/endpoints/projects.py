@@ -260,13 +260,32 @@ async def create_datasource(
     session: AsyncSession = Depends(get_session)
 ):
     """创建新数据源"""
+    from app.core.network import test_mysql_connection
+    from datetime import datetime
+
     project = await session.get(Project, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     # 加密密码
     password_hash = bcrypt.hash(ds.password) if ds.password else ""
-    
+
+    # 尝试测试连接以确定初始状态
+    status = "unchecked"
+    error_msg = None
+    last_test_at = datetime.utcnow()
+
+    if ds.username and ds.password:
+        success, message = await test_mysql_connection(
+            host=ds.host,
+            port=ds.port,
+            username=ds.username,
+            password=ds.password,
+            database=ds.db_name if ds.db_name else None
+        )
+        status = "connected" if success else "error"
+        error_msg = None if success else message
+
     db_ds = ProjectDataSource(
         project_id=project_id,
         name=ds.name,
@@ -277,7 +296,10 @@ async def create_datasource(
         username=ds.username,
         password_hash=password_hash,
         variable_name=ds.variable_name,
-        is_enabled=ds.is_enabled
+        is_enabled=ds.is_enabled,
+        status=status,
+        last_test_at=last_test_at,
+        error_msg=error_msg
     )
     session.add(db_ds)
     await session.commit()
@@ -292,22 +314,40 @@ async def update_datasource(
     session: AsyncSession = Depends(get_session)
 ):
     """更新数据源"""
+    from app.core.network import test_mysql_connection
+
     ds = await session.get(ProjectDataSource, ds_id)
     if not ds or ds.project_id != project_id:
         raise HTTPException(status_code=404, detail="DataSource not found")
-    
+
     update_data = ds_update.model_dump(exclude_unset=True)
-    
+
     # 特殊处理密码字段
+    password_updated = False
     if 'password' in update_data:
         password = update_data.pop('password')
         if password:
             ds.password_hash = bcrypt.hash(password)
-    
+            password_updated = True
+
+    # 检查是否需要重新测试连接（配置发生变化）
+    should_retest = any(key in update_data for key in ['host', 'port', 'username', 'db_name']) or password_updated
+
     for key, value in update_data.items():
         setattr(ds, key, value)
     ds.updated_at = datetime.utcnow()
-    
+
+    # 如果连接配置发生变化，重新测试连接
+    if should_retest and ds.username and ds.password_hash:
+        # 注意：这里需要使用原始密码，但update时密码已经被加密了
+        # 所以我们只在password字段有值时才测试
+        if 'password' in ds_update or any(key in update_data for key in ['host', 'port', 'username', 'db_name']):
+            # 如果没有提供新密码，使用现有密码哈希（但无法解密，所以无法测试）
+            # 这里简化处理：只在提供了新密码或相关配置变更时标记为unchecked
+            ds.status = "unchecked"
+            ds.error_msg = None
+            ds.last_test_at = datetime.utcnow()
+
     session.add(ds)
     await session.commit()
     await session.refresh(ds)
@@ -333,24 +373,40 @@ async def test_datasource_connection(
     test_req: DataSourceTestRequest
 ):
     """测试数据源连接 (不保存)"""
-    from app.core.network import test_tcp_connection
-    
+    from app.core.network import test_mysql_connection, test_tcp_connection
+
+    # 验证必填字段
     if not test_req.host or not test_req.port:
         return DataSourceTestResponse(
             success=False,
-            message="Host and Port are required"
+            message="主机地址和端口不能为空"
         )
-    
-    success, message = test_tcp_connection(test_req.host, test_req.port)
-    
-    if success:
-        return DataSourceTestResponse(
-            success=True,
-            message=f"Successfully connected to {test_req.host}:{test_req.port}"
-        )
-    else:
-        return DataSourceTestResponse(
-            success=False,
-            message=f"Connection failed: {message}"
-        )
+
+    # 如果没有提供用户名或密码，只测试 TCP 连接
+    if not test_req.username or not test_req.password:
+        success, message = test_tcp_connection(test_req.host, test_req.port)
+        if success:
+            return DataSourceTestResponse(
+                success=True,
+                message=f"TCP 连接成功 ({test_req.host}:{test_req.port})，但未提供数据库账号，无法验证数据库连接"
+            )
+        else:
+            return DataSourceTestResponse(
+                success=False,
+                message=f"TCP 连接失败: {message}"
+            )
+
+    # 测试 MySQL 数据库连接
+    success, message = await test_mysql_connection(
+        host=test_req.host,
+        port=test_req.port,
+        username=test_req.username,
+        password=test_req.password,
+        database=test_req.db_name
+    )
+
+    return DataSourceTestResponse(
+        success=success,
+        message=message
+    )
 

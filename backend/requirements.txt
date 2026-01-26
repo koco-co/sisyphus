@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlmodel
 psycopg2-binary
 asyncpg
+aiomysql
 python-jose[cryptography]
 passlib[bcrypt]
 pydantic[email]

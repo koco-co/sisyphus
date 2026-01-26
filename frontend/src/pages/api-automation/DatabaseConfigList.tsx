@@ -115,7 +115,7 @@ export default function DatabaseConfigList() {
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center gap-2 text-slate-400 text-sm mb-4">
-                    <Link to={`/project/${projectId}`} className="hover:text-cyan-400 transition-colors">项目概览</Link>
+                    <Link to={`/project/${projectId}`} className="hover:text-cyan-400 transition-colors">项目管理</Link>
                     <ArrowLeft className="w-3 h-3 rotate-180" />
                     <Link to={`/project/${projectId}`} className="hover:text-cyan-400 transition-colors">{project?.name || 'Loading...'}</Link>
                     <ArrowLeft className="w-3 h-3 rotate-180" />
@@ -163,7 +163,7 @@ export default function DatabaseConfigList() {
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">配置信息</th>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">连接状态</th>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">启用状态</th>
-                            <th className="px-6 py-4 text-sm font-medium text-slate-400 text-right">操作</th>
+                            <th className="px-6 py-4 text-sm font-medium text-slate-400 text-left">操作</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -199,8 +199,8 @@ export default function DatabaseConfigList() {
                                         onCheckedChange={() => toggleMutation.mutate(ds)}
                                     />
                                 </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex justify-end gap-2">
+                                <td className="px-6 py-4 text-left">
+                                    <div className="flex justify-start gap-2">
                                         <button
                                             onClick={() => handleCopyConfig(ds)}
                                             className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"

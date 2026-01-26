@@ -46,10 +46,10 @@ class DataSourceCreate(BaseModel):
     db_type: str  # mysql, postgresql, mongodb, redis
     host: str
     port: int
-    db_name: str = ""
+    db_name: str  # 数据库名称（必填）
     username: str = ""
     password: str = ""  # 前端传明文，后端加密存储
-    variable_name: str = ""
+    variable_name: str  # 引用变量名（必填）
     is_enabled: bool = True
 
 
