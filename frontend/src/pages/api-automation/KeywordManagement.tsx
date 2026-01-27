@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom'
 import { keywordsApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { useToast } from '@/components/ui/Toast'
+import { EmptyState } from '@/components/common/EmptyState'
 
 interface KeywordItem {
     id: number
@@ -39,6 +41,7 @@ export default function KeywordManagement() {
     const { t } = useTranslation()
     const navigate = useNavigate()
     const queryClient = useQueryClient()
+    const { success, error } = useToast()
     const [searchTerm, setSearchTerm] = useState('')
     const [typeFilter, setTypeFilter] = useState('')
     const [deleteTarget, setDeleteTarget] = useState<KeywordItem | null>(null)
@@ -58,6 +61,10 @@ export default function KeywordManagement() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['keywords'] })
             setDeleteTarget(null)
+            success('删除成功')
+        },
+        onError: () => {
+            error('删除失败')
         }
     })
 
@@ -73,7 +80,10 @@ export default function KeywordManagement() {
     const generateFileMutation = useMutation({
         mutationFn: (id: number) => keywordsApi.generateFile(id),
         onSuccess: (res) => {
-            alert(res.data.message)
+            success(res.data.message || '生成成功')
+        },
+        onError: (err: any) => {
+            error(err?.response?.data?.detail || '生成失败')
         }
     })
 
@@ -169,14 +179,18 @@ export default function KeywordManagement() {
                                 <th className="text-left text-slate-400 font-medium text-sm px-6 py-4">方法名</th>
                                 <th className="text-left text-slate-400 font-medium text-sm px-6 py-4">操作类型</th>
                                 <th className="text-left text-slate-400 font-medium text-sm px-6 py-4">{t('common.status')}</th>
-                                <th className="text-right text-slate-400 font-medium text-sm px-6 py-4">{t('common.action')}</th>
+                                <th className="text-left text-slate-400 font-medium text-sm px-6 py-4">{t('common.action')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredKeywords.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                                        暂无关键字数据
+                                    <td colSpan={5}>
+                                        <EmptyState
+                                            title="暂无关键字数据"
+                                            description="点击右上角创建新的关键字"
+                                            icon={Code}
+                                        />
                                     </td>
                                 </tr>
                             ) : (
@@ -223,7 +237,7 @@ export default function KeywordManagement() {
                                             </button>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => navigate(`/api/keywords/${keyword.id}`)}
                                                     className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
@@ -257,11 +271,12 @@ export default function KeywordManagement() {
 
             {/* 删除确认对话框 */}
             <ConfirmDialog
-                open={!!deleteTarget}
+                isOpen={!!deleteTarget}
                 title="删除关键字"
-                message={`确定要删除关键字「${deleteTarget?.name}」吗？此操作无法撤销。`}
+                description={`确定要删除关键字「${deleteTarget?.name}」吗？此操作无法撤销。`}
                 onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-                onCancel={() => setDeleteTarget(null)}
+                onClose={() => setDeleteTarget(null)}
+                isDestructive
             />
         </div>
     )

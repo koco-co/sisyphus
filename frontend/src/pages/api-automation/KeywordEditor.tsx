@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { keywordsApi, projectsApi } from '@/api/client'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { MonacoEditor } from '@/components/ui/MonacoEditor'
+import { useToast } from '@/components/ui/Toast'
 
 interface KeywordVariable {
     name: string
@@ -76,6 +77,7 @@ export default function KeywordEditor() {
     const { id } = useParams()
     const isEditing = !!id
     const queryClient = useQueryClient()
+    const { success, error: toastError } = useToast()
 
     const [formData, setFormData] = useState({
         name: '',
@@ -126,10 +128,33 @@ export default function KeywordEditor() {
             return keywordsApi.create(data)
         },
         onSuccess: () => {
+            success(isEditing ? '更新成功' : '创建成功')
             queryClient.invalidateQueries({ queryKey: ['keywords'] })
             navigate('/api/keywords')
+        },
+        onError: (error: any) => {
+            console.error('保存失败:', error)
+            toastError(error?.response?.data?.detail || '保存失败，请检查输入')
         }
     })
+
+    const handleSubmit = () => {
+        // 表单验证
+        if (!formData.name.trim()) {
+            toastError('请输入关键字名称')
+            return
+        }
+        if (!formData.func_name.trim()) {
+            toastError('请输入方法名')
+            return
+        }
+        if (!formData.function_code.trim()) {
+            toastError('请输入函数代码')
+            return
+        }
+
+        mutation.mutate(formData)
+    }
 
     const generateExampleCode = () => {
         setFormData(prev => ({
@@ -180,7 +205,7 @@ export default function KeywordEditor() {
                         取消
                     </button>
                     <button
-                        onClick={() => mutation.mutate(formData)}
+                        onClick={handleSubmit}
                         disabled={mutation.isPending}
                         className="px-6 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all flex items-center gap-2 disabled:opacity-50"
                     >
