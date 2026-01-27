@@ -14,6 +14,7 @@ from apisix.parser.v2_yaml_parser import V2YamlParser, YamlParseError
 from apisix.executor.test_case_executor import TestCaseExecutor
 from apisix.core.variable_manager import VariableManager
 from apisix.utils.template import render_template
+from apisix.data_driven.iterator import DataDrivenIterator
 
 
 def main() -> int:
@@ -164,6 +165,94 @@ def execute_test_case(
     if profile and test_case.config:
         test_case.config.active_profile = profile
 
+    # Check if data-driven testing is enabled
+    if (
+        test_case.config
+        and test_case.config.data_iterations
+        and test_case.config.data_source
+    ):
+        return _execute_data_driven_test(test_case, verbose)
+    else:
+        return _execute_single_test(test_case, verbose)
+
+
+def _execute_data_driven_test(test_case, verbose: bool = False) -> dict:
+    """Execute data-driven test case.
+
+    Args:
+        test_case: Test case with data source configuration
+        verbose: Enable verbose output
+
+    Returns:
+        Aggregated execution results
+    """
+    # Create data-driven iterator
+    iterator = DataDrivenIterator(
+        test_case,
+        test_case.config.data_source,
+        test_case.config.variable_prefix,
+    )
+
+    print(f"Executing: {test_case.name} (Data-Driven)")
+    print(f"Description: {test_case.description}")
+    print(f"Data iterations: {len(iterator)}")
+    print(f"Steps: {len(test_case.steps)}")
+    print()
+
+    # Execute for each data row
+    all_results = []
+    total_passed = 0
+    total_failed = 0
+
+    for i, (data_row, augmented_test_case) in enumerate(iterator):
+        print(f"\n--- Data Iteration #{i + 1} ---")
+        if verbose:
+            print(f"Data: {data_row}")
+
+        result = _execute_single_test(augmented_test_case, verbose)
+        all_results.append(result)
+
+        # Update statistics
+        if result["test_case"]["status"] == "passed":
+            total_passed += 1
+        else:
+            total_failed += 1
+
+    # Aggregate results
+    aggregated_result = {
+        "test_case": {
+            "name": test_case.name,
+            "status": "passed" if total_failed == 0 else "failed",
+            "total_iterations": len(iterator),
+            "passed_iterations": total_passed,
+            "failed_iterations": total_failed,
+            "pass_rate": (total_passed / len(iterator) * 100) if len(iterator) > 0 else 0,
+        },
+        "iterations": all_results,
+    }
+
+    # Print summary
+    print(f"\n{'='*60}")
+    print(f"Data-Driven Test Summary")
+    print(f"Total Iterations: {len(iterator)}")
+    print(f"Passed: {total_passed} ✓")
+    print(f"Failed: {total_failed} ✗")
+    print(f"Pass Rate: {aggregated_result['test_case']['pass_rate']:.1f}%")
+    print(f"{'='*60}")
+
+    return aggregated_result
+
+
+def _execute_single_test(test_case, verbose: bool = False) -> dict:
+    """Execute single test case.
+
+    Args:
+        test_case: Test case to execute
+        verbose: Enable verbose output
+
+    Returns:
+        Execution result as dictionary
+    """
     # Print test case info
     print(f"Executing: {test_case.name}")
     print(f"Description: {test_case.description}")

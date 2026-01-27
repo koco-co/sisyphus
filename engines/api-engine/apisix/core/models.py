@@ -64,6 +64,18 @@ class GlobalConfig:
         retry_times: Default retry count for failed steps
         concurrent: Whether to enable concurrent execution
         concurrent_threads: Number of threads for concurrent execution
+        data_source: Data source configuration for data-driven testing
+            - type: Data source type (csv/json/database)
+            - file_path: File path (for CSV/JSON)
+            - delimiter: CSV delimiter (default: ",")
+            - encoding: File encoding (default: "utf-8")
+            - has_header: Whether CSV has header (default: True)
+            - data_key: JSON key to extract data (for JSON)
+            - db_type: Database type (for database)
+            - connection_config: Database connection config (for database)
+            - sql: SQL query (for database)
+        data_iterations: Whether to iterate over data source (default: False)
+        variable_prefix: Prefix for data variables (default: "")
     """
 
     name: str
@@ -75,6 +87,9 @@ class GlobalConfig:
     retry_times: int = 0
     concurrent: bool = False
     concurrent_threads: int = 3
+    data_source: Optional[Dict[str, Any]] = None
+    data_iterations: bool = False
+    variable_prefix: str = ""
 
 
 @dataclass
@@ -120,7 +135,7 @@ class TestStep:
         type: Step type (request, database, wait, loop, etc.)
         method: HTTP method (for API requests)
         url: Request URL
-        params: Query parameters
+        params: Query parameters or database query parameters
         headers: Request headers
         body: Request body
         validations: List of validation rules
@@ -132,6 +147,16 @@ class TestStep:
         retry_times: Step-specific retry count
         setup: Setup hooks (before step execution)
         teardown: Teardown hooks (after step execution)
+        database: Database configuration (for database steps)
+            - type: Database type (mysql/postgresql/sqlite)
+            - host: Database host (for MySQL/PostgreSQL)
+            - port: Database port (for MySQL/PostgreSQL)
+            - user: Database user (for MySQL/PostgreSQL)
+            - password: Database password (for MySQL/PostgreSQL)
+            - database: Database name (for MySQL/PostgreSQL)
+            - path: Database file path (for SQLite)
+        operation: Database operation type (query/exec/executemany/script)
+        sql: SQL statement to execute
     """
 
     name: str
@@ -150,6 +175,9 @@ class TestStep:
     retry_times: Optional[int] = None
     setup: Optional[Dict[str, Any]] = None
     teardown: Optional[Dict[str, Any]] = None
+    database: Optional[Dict[str, Any]] = None
+    operation: Optional[str] = None
+    sql: Optional[str] = None
 
 
 @dataclass

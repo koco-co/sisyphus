@@ -40,6 +40,7 @@ class StepExecutor(ABC):
         step: TestStep,
         timeout: int = 30,
         retry_times: int = 0,
+        previous_results=None,
     ):
         """Initialize StepExecutor.
 
@@ -48,11 +49,13 @@ class StepExecutor(ABC):
             step: Test step to execute
             timeout: Default timeout in seconds
             retry_times: Default retry count
+            previous_results: List of previous step results for dependency checking
         """
         self.variable_manager = variable_manager
         self.step = step
         self.timeout = step.timeout or timeout
         self.retry_times = step.retry_times or retry_times
+        self.previous_results = previous_results or []
 
     def execute(self) -> StepResult:
         """Execute the test step.
@@ -181,6 +184,22 @@ class StepExecutor(ABC):
             if only_condition and only_condition.lower() not in ("true", "1", "yes"):
                 return False
 
+        # Check depends_on conditions
+        if self.step.depends_on:
+            # Check if all dependency steps succeeded
+            for dep_step_name in self.step.depends_on:
+                dep_found = False
+                for result in self.previous_results:
+                    if result.name == dep_step_name:
+                        dep_found = True
+                        # Skip if dependency failed
+                        if result.status != "success":
+                            return False
+                        break
+                # Skip if dependency step not found
+                if not dep_found:
+                    return False
+
         return True
 
     def _render_step(self) -> Dict[str, Any]:
@@ -215,6 +234,16 @@ class StepExecutor(ABC):
                 rendered["body"] = self.variable_manager.render_dict(self.step.body)
             else:
                 rendered["body"] = self.step.body
+
+        # Render database-specific fields
+        if self.step.database:
+            rendered["database"] = self.variable_manager.render_dict(self.step.database)
+
+        if self.step.sql:
+            rendered["sql"] = render_template(self.step.sql, context)
+
+        if self.step.operation:
+            rendered["operation"] = self.step.operation
 
         # Render validations
         if self.step.validations:
@@ -279,8 +308,10 @@ class StepExecutor(ABC):
         if not self.step.setup:
             return
 
-        # TODO: Implement hook execution
-        pass
+        from apisix.utils.hooks import HookExecutor
+
+        hook_executor = HookExecutor(self.variable_manager)
+        hook_executor.execute(self.step.setup)
 
     def _execute_teardown(self) -> None:
         """Execute teardown hooks.
@@ -290,8 +321,10 @@ class StepExecutor(ABC):
         if not self.step.teardown:
             return
 
-        # TODO: Implement hook execution
-        pass
+        from apisix.utils.hooks import HookExecutor
+
+        hook_executor = HookExecutor(self.variable_manager)
+        hook_executor.execute(self.step.teardown)
 
     def _create_error_info(self, exception: Exception) -> ErrorInfo:
         """Create ErrorInfo from exception.

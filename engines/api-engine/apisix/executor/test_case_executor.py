@@ -9,6 +9,7 @@ from typing import Optional
 from apisix.core.models import TestCase, TestStep, GlobalConfig, ProfileConfig
 from apisix.core.variable_manager import VariableManager
 from apisix.executor.api_executor import APIExecutor
+from apisix.executor.database_executor import DatabaseExecutor
 from apisix.result.collector import ResultCollector
 
 
@@ -55,8 +56,9 @@ class TestCaseExecutor:
 
         # Execute steps
         step_results = []
-        for step in self.test_case.steps:
-            step_result = self._execute_step(step)
+        for i, step in enumerate(self.test_case.steps):
+            # Pass previous step results for dependency checking
+            step_result = self._execute_step(step, step_results)
             step_results.append(step_result)
 
             # Stop on failure (or continue based on config)
@@ -135,14 +137,18 @@ class TestCaseExecutor:
         # TODO: Implement hook execution
         pass
 
-    def _execute_step(self, step: TestStep):
+    def _execute_step(self, step: TestStep, previous_results=None):
         """Execute a single test step.
 
         Args:
             step: Test step to execute
+            previous_results: List of previous step results for dependency checking
 
         Returns:
             StepResult object
+
+        Raises:
+            ValueError: If step type is not supported
         """
         # Get timeout and retry from config
         timeout = 30
@@ -154,9 +160,14 @@ class TestCaseExecutor:
 
         # Create executor based on step type
         if step.type == "request":
-            executor = APIExecutor(self.variable_manager, step, timeout, retry_times)
+            executor = APIExecutor(
+                self.variable_manager, step, timeout, retry_times, previous_results
+            )
+        elif step.type == "database":
+            executor = DatabaseExecutor(
+                self.variable_manager, step, timeout, retry_times, previous_results
+            )
         else:
-            # Placeholder for other step types
             raise ValueError(f"Unsupported step type: {step.type}")
 
         return executor.execute()

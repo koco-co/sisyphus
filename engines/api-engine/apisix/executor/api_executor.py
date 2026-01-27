@@ -38,6 +38,7 @@ class APIExecutor(StepExecutor):
         step: TestStep,
         timeout: int = 30,
         retry_times: int = 0,
+        previous_results=None,
     ):
         """Initialize APIExecutor.
 
@@ -46,8 +47,9 @@ class APIExecutor(StepExecutor):
             step: Test step to execute
             timeout: Default timeout in seconds
             retry_times: Default retry count
+            previous_results: List of previous step results for dependency checking
         """
-        super().__init__(variable_manager, step, timeout, retry_times)
+        super().__init__(variable_manager, step, timeout, retry_times, previous_results)
         self.session = requests.Session()
         self.validation_engine = ValidationEngine()
 

@@ -207,6 +207,11 @@ class V2YamlParser:
         concurrent = config_data.get("concurrent", False)
         concurrent_threads = config_data.get("concurrent_threads", 3)
 
+        # Parse data source configuration
+        data_source = config_data.get("data_source")
+        data_iterations = config_data.get("data_iterations", False)
+        variable_prefix = config_data.get("variable_prefix", "")
+
         return GlobalConfig(
             name=name,
             description=description,
@@ -217,6 +222,9 @@ class V2YamlParser:
             retry_times=retry_times,
             concurrent=concurrent,
             concurrent_threads=concurrent_threads,
+            data_source=data_source,
+            data_iterations=data_iterations,
+            variable_prefix=variable_prefix,
         )
 
     def _parse_step(self, step_data: Dict[str, Any]) -> Optional[TestStep]:
@@ -244,6 +252,11 @@ class V2YamlParser:
         params = step_details.get("params")
         headers = step_details.get("headers")
         body = step_details.get("body")
+
+        # Parse database-specific fields
+        database = step_details.get("database")
+        operation = step_details.get("operation")
+        sql = step_details.get("sql")
 
         # Parse validations
         validations = []
@@ -291,6 +304,9 @@ class V2YamlParser:
             retry_times=retry_times,
             setup=setup,
             teardown=teardown,
+            database=database,
+            operation=operation,
+            sql=sql,
         )
 
     def _parse_validation(self, val_data: Dict[str, Any]) -> Optional[ValidationRule]:
