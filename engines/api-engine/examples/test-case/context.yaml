@@ -1,0 +1,4 @@
+# 测试环境配置
+base_url: https://httpbin.org
+username: test_user
+password: test123
