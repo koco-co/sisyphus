@@ -19,7 +19,7 @@ const codeTemplates: Record<string, string> = {
     request: `def send_request(url: str, method: str = "GET", headers: dict = None, body: dict = None) -> dict:
     """发送HTTP请求"""
     import requests
-    
+
     response = requests.request(
         method=method,
         url=url,
@@ -36,18 +36,51 @@ const codeTemplates: Record<string, string> = {
     if actual != expected:
         raise AssertionError(f"{message}: 期望 {expected}, 实际 {actual}")
     return True`,
-    extract: `def extract_value(response: dict, jsonpath: str) -> any:
-    """从响应中提取值"""
-    from jsonpath_ng import parse
-    
-    expr = parse(jsonpath)
-    matches = expr.find(response)
-    return matches[0].value if matches else None`,
+    extract: `# class名称必须与关键字名称一致
+class extract_json:
+    def __init__(self):
+        pass
+
+    def extract_json(self, EXVALUE, INDEX, VARNAME):
+        """使用JsonPath表达式从JSON数据中提取指定路径的值
+
+        Args:
+            EXVALUE: 要提取的源数据（字典/列表/JSON字符串）
+            INDEX: JsonPath表达式路径
+            VARNAME: 提取后的变量名称
+
+        Returns:
+            提取到的值
+        """
+        from jsonpath_ng import parse
+        import json
+
+        # 处理输入数据
+        if isinstance(EXVALUE, str):
+            data = json.loads(EXVALUE)
+        else:
+            data = EXVALUE
+
+        # 执行提取
+        expr = parse(INDEX)
+        matches = expr.find(data)
+
+        if not matches:
+            return None
+
+        # 获取提取的值
+        if len(matches) == 1:
+            value = matches[0].value
+        else:
+            value = [m.value for m in matches]
+
+        print(f"{VARNAME} = {value}")
+        return value`,
     db: `def query_database(sql: str, params: tuple = None) -> list:
     """执行数据库查询"""
     # 注意: 需要配置数据源连接
     import pymysql
-    
+
     connection = pymysql.connect(
         host="localhost",
         user="root",
