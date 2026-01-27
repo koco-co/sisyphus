@@ -8,6 +8,8 @@ interface Option {
     value: string | number;
 }
 
+type Size = 'sm' | 'md' | 'lg';
+
 interface CustomSelectProps {
     value: string | number;
     onChange: (value: any) => void;
@@ -15,6 +17,7 @@ interface CustomSelectProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    size?: Size;
 }
 
 export function CustomSelect({
@@ -23,12 +26,32 @@ export function CustomSelect({
     options,
     placeholder = '请选择',
     className,
-    disabled = false
+    disabled = false,
+    size = 'md'
 }: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.value === value);
+
+    // 尺寸配置
+    const sizeStyles = {
+        sm: 'h-8 px-2.5 py-1 text-xs rounded-xl',
+        md: 'h-12 px-4 py-2 text-sm rounded-2xl',
+        lg: 'h-14 px-5 py-3 text-base rounded-2xl'
+    };
+
+    const borderStyles = {
+        sm: 'border-white/5',
+        md: 'border-white/10',
+        lg: 'border-white/10'
+    };
+
+    const iconSizes = {
+        sm: 'w-3 h-3',
+        md: 'w-4 h-4',
+        lg: 'w-5 h-5'
+    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -53,21 +76,24 @@ export function CustomSelect({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
-                    "w-full h-12 px-4 flex items-center justify-between",
-                    "bg-white/5 border border-white/10 rounded-xl text-left",
+                    "w-full flex items-center justify-between",
+                    "bg-white/5 border text-left",
                     "text-white transition-all duration-200",
-                    "hover:bg-white/10 hover:border-white/20",
+                    "hover:bg-white/10",
                     "focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20",
                     isOpen && "border-cyan-500/50 ring-1 ring-cyan-500/20 bg-white/10",
-                    disabled && "opacity-50 cursor-not-allowed hover:bg-white/5"
+                    disabled && "opacity-50 cursor-not-allowed hover:bg-white/5",
+                    sizeStyles[size],
+                    borderStyles[size]
                 )}
             >
-                <span className={cn("block truncate", !selectedOption && "text-slate-500")}>
+                <span className={cn("block truncate font-medium", !selectedOption && "text-slate-500")}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
                 <ChevronDown
                     className={cn(
-                        "w-4 h-4 text-slate-500 transition-transform duration-200",
+                        iconSizes[size],
+                        "text-slate-500 transition-transform duration-200 flex-shrink-0 ml-1.5",
                         isOpen && "transform rotate-180 text-cyan-400"
                     )}
                 />

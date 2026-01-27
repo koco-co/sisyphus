@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Sparkles, Plus, Trash2, Loader2, Code } from 'lucide-r
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { keywordsApi, projectsApi } from '@/api/client'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { MonacoEditor } from '@/components/ui/MonacoEditor'
 
 interface KeywordVariable {
     name: string
@@ -85,6 +86,7 @@ export default function KeywordEditor() {
         project_id: 1,
         input_params: [] as KeywordVariable[],
         output_params: [] as KeywordVariable[],
+        language: 'python'
     })
 
     // 获取项目列表
@@ -110,6 +112,7 @@ export default function KeywordEditor() {
                 project_id: data.project_id,
                 input_params: data.input_params || [],
                 output_params: data.output_params || [],
+                language: data.language || 'python'
             })
             return data
         }
@@ -149,7 +152,7 @@ export default function KeywordEditor() {
     }))
 
     return (
-        <div className="min-h-[calc(100vh-64px)] p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="min-h-[calc(100vh-64px)] p-6 md:p-8 max-w-[1920px] mx-auto space-y-8">
             {/* Header */}
             <motion.div
                 className="flex items-center justify-between"
@@ -188,7 +191,7 @@ export default function KeywordEditor() {
             </motion.div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Left Column: Form */}
                 <motion.div
                     className="lg:col-span-1 space-y-6"
@@ -325,28 +328,34 @@ export default function KeywordEditor() {
                 >
                     <div className="flex-1 bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl">
                         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-950/50">
-                            <span className="text-sm font-medium text-slate-400 px-2">Python Implementation</span>
+                            <div className="w-28">
+                                <CustomSelect
+                                    value={formData.language}
+                                    onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                                    options={[
+                                        { label: 'Python', value: 'python' }
+                                    ]}
+                                    placeholder="选择语言"
+                                    size="sm"
+                                />
+                            </div>
                             <button
                                 onClick={generateExampleCode}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 hover:text-violet-300 transition-colors border border-violet-500/20"
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 hover:text-violet-300 transition-all border border-violet-500/10 hover:border-violet-500/20"
                             >
                                 <Sparkles className="w-3 h-3" />
                                 生成示例代码
                             </button>
                         </div>
-                        <div className="flex-1 relative group">
-                            <textarea
+                        <div className="flex-1 h-full min-h-[600px]">
+                            <MonacoEditor
                                 value={formData.function_code}
-                                onChange={(e) => setFormData(prev => ({ ...prev, function_code: e.target.value }))}
-                                className="absolute inset-0 w-full h-full bg-slate-950/80 p-6 text-white font-mono text-sm leading-relaxed resize-none focus:outline-none selection:bg-cyan-500/30"
-                                spellCheck={false}
-                                placeholder={`def your_function():\n    # 在这里编写关键字代码\n    pass`}
+                                onChange={(value) => setFormData(prev => ({ ...prev, function_code: value }))}
+                                language={formData.language}
+                                height="600px"
                             />
                         </div>
                     </div>
-                    <p className="mt-4 text-xs text-slate-500 px-2">
-                        提示: 请使用 Python 3.10+ 语法，确保导入所有必要的依赖库。
-                    </p>
                 </motion.div>
             </div>
         </div>
