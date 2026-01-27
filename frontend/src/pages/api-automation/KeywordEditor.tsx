@@ -270,24 +270,26 @@ export default function KeywordEditor() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-2">操作类型</label>
-                                <CustomSelect
-                                    value={formData.category}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, category: val }))}
-                                    options={categoryOptions}
-                                    placeholder="选择操作类型"
-                                />
-                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-2">操作类型</label>
+                                    <CustomSelect
+                                        value={formData.category}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, category: val }))}
+                                        options={categoryOptions}
+                                        placeholder="选择操作类型"
+                                    />
+                                </div>
 
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-2">所属项目</label>
-                                <CustomSelect
-                                    value={formData.project_id}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, project_id: val }))}
-                                    options={projectOptions}
-                                    placeholder="选择所属项目"
-                                />
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-2">所属项目</label>
+                                    <CustomSelect
+                                        value={formData.project_id}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, project_id: val }))}
+                                        options={projectOptions}
+                                        placeholder="选择所属项目"
+                                    />
+                                </div>
                             </div>
 
                             <div>
@@ -310,7 +312,10 @@ export default function KeywordEditor() {
                             className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"
                         >
                             <div className="flex items-center justify-between flex-1">
-                                <span className="text-slate-100 font-semibold">变量定义</span>
+                                <div className="flex items-center gap-2 text-slate-100 font-semibold">
+                                    <Code className="w-5 h-5 text-cyan-400" />
+                                    变量定义
+                                </div>
                                 <span className="text-xs text-slate-500">{formData.input_params.length}/10</span>
                             </div>
                             {collapsedSections.includes('variables') ? <ChevronDown className="w-5 h-5 text-slate-400 ml-2" /> : <ChevronUp className="w-5 h-5 text-slate-400 ml-2" />}
@@ -318,8 +323,7 @@ export default function KeywordEditor() {
 
                         {!collapsedSections.includes('variables') && (
                             <div className="p-6 space-y-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-slate-500">变量名称 | 描述</span>
+                                <div className="flex items-center justify-end">
                                     <button
                                         onClick={() => {
                                             if (formData.input_params.length < 10) {
