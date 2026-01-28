@@ -132,7 +132,7 @@ class TestStep:
 
     Attributes:
         name: Step name
-        type: Step type (request, database, wait, loop, etc.)
+        type: Step type (request, database, wait, loop, concurrent, etc.)
         method: HTTP method (for API requests)
         url: Request URL
         params: Query parameters or database query parameters
@@ -157,6 +157,15 @@ class TestStep:
             - path: Database file path (for SQLite)
         operation: Database operation type (query/exec/executemany/script)
         sql: SQL statement to execute
+        seconds: Wait duration in seconds (for wait steps)
+        condition: Condition expression to wait for (for wait steps)
+        interval: Polling interval in seconds (for conditional wait, default: 1)
+        max_wait: Maximum wait time in seconds (for conditional wait, default: 60)
+        loop_type: Loop type (for/while, for loop steps)
+        loop_count: Loop iteration count (for for loops)
+        loop_condition: Loop continuation condition (for while loops)
+        loop_variable: Variable name for loop counter (for loops)
+        loop_steps: Steps to execute in loop (for loop steps)
     """
 
     name: str
@@ -178,6 +187,17 @@ class TestStep:
     database: Optional[Dict[str, Any]] = None
     operation: Optional[str] = None
     sql: Optional[str] = None
+    # Wait step fields
+    seconds: Optional[float] = None
+    condition: Optional[str] = None
+    interval: Optional[float] = None
+    max_wait: Optional[float] = None
+    # Loop step fields
+    loop_type: Optional[str] = None
+    loop_count: Optional[int] = None
+    loop_condition: Optional[str] = None
+    loop_variable: Optional[str] = None
+    loop_steps: Optional[List[Dict[str, Any]]] = None
 
 
 @dataclass

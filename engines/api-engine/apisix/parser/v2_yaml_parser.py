@@ -258,6 +258,19 @@ class V2YamlParser:
         operation = step_details.get("operation")
         sql = step_details.get("sql")
 
+        # Parse wait-specific fields
+        seconds = step_details.get("seconds")
+        condition = step_details.get("condition")
+        interval = step_details.get("interval")
+        max_wait = step_details.get("max_wait")
+
+        # Parse loop-specific fields
+        loop_type = step_details.get("loop_type")
+        loop_count = step_details.get("loop_count")
+        loop_condition = step_details.get("loop_condition")
+        loop_variable = step_details.get("loop_variable")
+        loop_steps = step_details.get("loop_steps")
+
         # Parse validations
         validations = []
         validations_data = step_details.get("validations", [])
@@ -307,6 +320,15 @@ class V2YamlParser:
             database=database,
             operation=operation,
             sql=sql,
+            seconds=seconds,
+            condition=condition,
+            interval=interval,
+            max_wait=max_wait,
+            loop_type=loop_type,
+            loop_count=loop_count,
+            loop_condition=loop_condition,
+            loop_variable=loop_variable,
+            loop_steps=loop_steps,
         )
 
     def _parse_validation(self, val_data: Dict[str, Any]) -> Optional[ValidationRule]:

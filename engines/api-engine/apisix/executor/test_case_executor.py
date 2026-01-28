@@ -10,6 +10,8 @@ from apisix.core.models import TestCase, TestStep, GlobalConfig, ProfileConfig
 from apisix.core.variable_manager import VariableManager
 from apisix.executor.api_executor import APIExecutor
 from apisix.executor.database_executor import DatabaseExecutor
+from apisix.executor.wait_executor import WaitExecutor
+from apisix.executor.loop_executor import LoopExecutor
 from apisix.result.collector import ResultCollector
 
 
@@ -165,6 +167,14 @@ class TestCaseExecutor:
             )
         elif step.type == "database":
             executor = DatabaseExecutor(
+                self.variable_manager, step, timeout, retry_times, previous_results
+            )
+        elif step.type == "wait":
+            executor = WaitExecutor(
+                self.variable_manager, step, timeout, retry_times, previous_results
+            )
+        elif step.type == "loop":
+            executor = LoopExecutor(
                 self.variable_manager, step, timeout, retry_times, previous_results
             )
         else:
