@@ -72,3 +72,9 @@ ehthumbs.db
 *.pem
 *.key
 *.crt
+
+.agent
+
+.claude
+
+AGENTS.md

@@ -1,8 +1,0 @@
-desc: 测试 GET 请求
-steps:
-- 测试获取信息:
-    关键字: send_request
-    url: https://httpbin.org/get
-    method: GET
-    params:
-      username: '{{username}}'
