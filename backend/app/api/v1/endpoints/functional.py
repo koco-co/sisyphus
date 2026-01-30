@@ -10,7 +10,7 @@ from datetime import datetime
 import csv
 import io
 from app.core.db import get_session
-from app.models.functional import Requirement, FunctionalTestCase, AIGenerationTask
+from app.models import Requirement, FunctionalTestCase
 from app.schemas.pagination import PageResponse
 
 router = APIRouter()
@@ -47,7 +47,34 @@ async def create_requirement(
     session: AsyncSession = Depends(get_session)
 ):
     """创建需求"""
-    requirement = Requirement(**data)
+    # 映射前端字段到后端字段
+    mapped_data = {
+        "name": data.get("title") or data.get("name", ""),
+        "description": data.get("description", ""),
+        "priority": data.get("priority", "p2"),
+        "module_name": data.get("module_name", ""),
+        "module_id": data.get("module_id"),
+        "iteration": data.get("iteration"),
+        "attachments": data.get("attachments", []),
+        "clarification_status": data.get("clarification_status", "draft"),
+        "risk_points": data.get("risk_points", []),
+        "status": data.get("status", "draft"),
+        "created_by": data.get("created_by", 1),  # 默认用户ID为1
+    }
+
+    # 自动生成 requirement_id
+    from datetime import datetime
+    date_prefix = datetime.now().strftime("%Y%m%d")
+
+    # 查询当天已有的需求数量，生成序号
+    result = await session.execute(
+        select(Requirement).where(Requirement.requirement_id.like(f"REQ-{date_prefix}-%"))
+    )
+    existing_count = len(result.scalars().all())
+    seq_number = existing_count + 1
+    mapped_data["requirement_id"] = f"REQ-{date_prefix}-{seq_number:03d}"
+
+    requirement = Requirement(**mapped_data)
     session.add(requirement)
     await session.commit()
     await session.refresh(requirement)
