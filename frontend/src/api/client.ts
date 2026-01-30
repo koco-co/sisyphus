@@ -152,4 +152,100 @@ export const keywordsApi = {
     generateFile: (id: number) => api.post(`/keywords/${id}/generate-file`),
 }
 
+// API 测试用例 API
+export const apiTestCasesApi = {
+    // 测试用例 CRUD
+    list: (projectId: number, params?: { page?: number; size?: number; search?: string; tags?: string; enabled_only?: boolean }) =>
+        api.get(`/projects/${projectId}/api-test-cases`, { params }),
+    create: (projectId: number, data: any) => api.post(`/projects/${projectId}/api-test-cases`, data),
+    get: (id: number) => api.get(`/api-test-cases/${id}`),
+    update: (id: number, data: any) => api.put(`/api-test-cases/${id}`, data),
+    delete: (id: number) => api.delete(`/api-test-cases/${id}`),
+
+    // 测试执行
+    execute: (id: number, data?: { environment_id?: number; verbose?: boolean }) =>
+        api.post(`/api-test-cases/${id}/execute`, data || {}),
+
+    // 执行历史
+    listExecutions: (id: number, limit?: number) =>
+        api.get(`/api-test-cases/${id}/executions`, { params: { limit } }),
+
+    getExecution: (executionId: number) =>
+        api.get(`/api-test-executions/${executionId}`),
+
+    getExecutionSteps: (executionId: number) =>
+        api.get(`/api-test-executions/${executionId}/steps`),
+
+    // 其他功能
+    validateYaml: (yamlContent: string) =>
+        api.post('/api-test-cases/validate', { yaml_content: yamlContent }),
+
+    importFromYaml: (projectId: number, yamlContent: string, override?: boolean) =>
+        api.post(`/projects/${projectId}/api-test-cases/import-yaml`, { yaml_content: yamlContent, override }),
+}
+
+// 功能测试模块 API
+
+// AI 配置管理 API
+export const aiConfigApi = {
+    list: () => api.get('/ai/configs/'),
+    getDefault: () => api.get('/ai/configs/default'),
+    get: (id: number) => api.get(`/ai/configs/${id}`),
+    create: (data: { provider_name: string; provider_type: string; api_key: string; model_name: string; temperature?: number; is_default?: boolean }) =>
+        api.post('/ai/configs/', data),
+    update: (id: number, data: { provider_name?: string; api_key?: string; model_name?: string; temperature?: number; is_enabled?: boolean; is_default?: boolean }) =>
+        api.put(`/ai/configs/${id}`, data),
+    delete: (id: number) => api.delete(`/ai/configs/${id}`),
+    getPresets: () => api.get('/ai/configs/presets'),
+}
+
+// 需求澄清 API
+export const aiClarificationApi = {
+    startClarification: (data: { requirement_id: string; initial_input: string }) =>
+        api.post('/ai/clarify', data, {
+            responseType: 'text' // SSE 流式响应
+        }),
+    sendMessage: (data: { requirement_id: string; user_input: string }) =>
+        api.post('/ai/clarify', data, {
+            responseType: 'text' // SSE 流式响应
+        }),
+    getConversation: (requirementId: string) =>
+        api.get(`/ai/clarify/${requirementId}`),
+    completeClarification: (requirementId: string) =>
+        api.post(`/ai/clarify/${requirementId}/complete`),
+}
+
+// 测试点生成和管理 API
+export const testPointsApi = {
+    generate: (data: { requirement_id: number; categories?: string[]; use_knowledge?: boolean; min_coverage?: string }) =>
+        api.post('/test-points/generate', data),
+    listByRequirement: (requirementId: number) =>
+        api.get(`/test-points/requirement/${requirementId}`),
+    get: (id: number) => api.get(`/test-points/${id}`),
+    delete: (id: number) => api.delete(`/test-points/${id}`),
+}
+
+// 测试用例生成和管理 API（功能测试）
+export const functionalTestCasesApi = {
+    generate: (data: { requirement_id: number; test_point_ids: number[]; module_name: string; page_name: string; case_type: string; include_knowledge?: boolean }) =>
+        api.post('/test-cases/generate/generate', data),
+    listByRequirement: (requirementId: number) =>
+        api.get(`/test-cases/generate/requirement/${requirementId}`),
+    get: (caseId: string) => api.get(`/test-cases/generate/${caseId}`),
+    delete: (caseId: string) => api.delete(`/test-cases/generate/${caseId}`),
+    approve: (caseId: string) => api.put(`/test-cases/generate/${caseId}/approve`),
+}
+
+// 需求管理 API
+export const requirementsApi = {
+    list: (params?: { page?: number; size?: number; status?: string }) =>
+        api.get('/functional/requirements', { params }),
+    get: (id: number) => api.get(`/functional/requirements/${id}`),
+    create: (data: { title: string; description: string; priority?: string; module_name?: string }) =>
+        api.post('/functional/requirements', data),
+    update: (id: number, data: { title?: string; description?: string; priority?: string; status?: string }) =>
+        api.put(`/functional/requirements/${id}`, data),
+    delete: (id: number) => api.delete(`/functional/requirements/${id}`),
+}
+
 export default api

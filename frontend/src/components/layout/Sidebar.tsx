@@ -53,8 +53,8 @@ const navItems: NavItem[] = [
         icon: TestTube,
         labelKey: 'nav.functionalTesting',
         children: [
-            { icon: FileCheck, labelKey: 'nav.caseManagement', href: '/functional/cases' },
-            { icon: Sparkles, labelKey: 'nav.caseGeneration', href: '/functional/ai-generate' },
+            { icon: FileCheck, labelKey: 'functionalTest.requirements.title', href: '/functional-test/requirements' },
+            { icon: Sparkles, labelKey: 'functionalTest.aiConfig.title', href: '/functional-test/ai-config' },
         ]
     },
     {

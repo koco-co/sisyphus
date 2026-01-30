@@ -11,7 +11,8 @@ import {
     Loader2,
     Edit2,
     Database,
-    FolderKanban
+    FolderKanban,
+    FileText
 } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
 import { projectsApi } from '@/api/client';
@@ -322,6 +323,14 @@ export default function ProjectManagement() {
                                                         className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors"
                                                     >
                                                         <Database className="w-4 h-4" />
+                                                    </Link>
+                                                </Tooltip>
+                                                <Tooltip content="测试用例" position="top">
+                                                    <Link
+                                                        to={`/api/projects/${project.id}/test-cases`}
+                                                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <FileText className="w-4 h-4" />
                                                     </Link>
                                                 </Tooltip>
                                                 <Tooltip content="删除" position="top">
