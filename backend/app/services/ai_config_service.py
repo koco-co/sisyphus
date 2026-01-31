@@ -8,13 +8,15 @@ from sqlmodel import select
 from cryptography.fernet import Fernet
 import base64
 import os
+import httpx
 
 from app.models.ai_config import AIProviderConfig
 from app.schemas.ai_config import (
     AIProviderConfigCreate,
     AIProviderConfigUpdate,
     AIProviderConfigResponse,
-    ProviderType
+    ProviderType,
+    TestResult
 )
 
 
@@ -308,3 +310,262 @@ class AIConfigService:
     def decrypt_config_key(config: AIProviderConfig) -> str:
         """解密配置的API Key（内部使用）"""
         return EncryptionService.decrypt_api_key(config.api_key_encrypted)
+
+    @staticmethod
+    async def test_api_connection(
+        provider_type: str,
+        api_key: str,
+        model_name: str,
+        api_endpoint: Optional[str] = None
+    ) -> TestResult:
+        """
+        测试API连接是否有效
+
+        Args:
+            provider_type: AI厂商类型 (openai, anthropic, glm, qwen, qianfan)
+            api_key: API密钥
+            model_name: 模型名称
+            api_endpoint: 自定义API端点（可选）
+
+        Returns:
+            TestResult: 测试结果
+        """
+        try:
+            # 根据厂商类型构建测试请求
+            if provider_type == "glm":
+                # 智谱AI测试
+                return await AIConfigService._test_zhipu(api_key, model_name, api_endpoint)
+            elif provider_type == "openai":
+                return await AIConfigService._test_openai(api_key, model_name, api_endpoint)
+            elif provider_type == "anthropic":
+                return await AIConfigService._test_anthropic(api_key, model_name, api_endpoint)
+            elif provider_type == "qwen":
+                return await AIConfigService._test_qwen(api_key, model_name, api_endpoint)
+            elif provider_type == "qianfan":
+                return await AIConfigService._test_qianfan(api_key, model_name, api_endpoint)
+            else:
+                return TestResult(
+                    success=False,
+                    message=f"暂不支持测试厂商类型: {provider_type}",
+                    error="不支持的厂商类型"
+                )
+        except Exception as e:
+            return TestResult(
+                success=False,
+                message="API测试失败",
+                error=str(e)
+            )
+
+    @staticmethod
+    async def _test_zhipu(
+        api_key: str,
+        model_name: str,
+        api_endpoint: Optional[str] = None
+    ) -> TestResult:
+        """测试智谱AI API连接"""
+        endpoint = api_endpoint or "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "user", "content": "你好"}
+            ],
+            "max_tokens": 10
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if "choices" in data and len(data["choices"]) > 0:
+                        return TestResult(
+                            success=True,
+                            message=f"智谱AI API连接成功！模型响应: {data['choices'][0]['message']['content'][:20]}..."
+                        )
+                    else:
+                        return TestResult(
+                            success=False,
+                            message="API返回格式异常",
+                            error="响应中缺少choices字段"
+                        )
+                elif response.status_code == 401:
+                    return TestResult(
+                        success=False,
+                        message="API Key验证失败",
+                        error="请检查API Key是否正确"
+                    )
+                else:
+                    return TestResult(
+                        success=False,
+                        message=f"API请求失败，状态码: {response.status_code}",
+                        error=response.text
+                    )
+        except httpx.TimeoutException:
+            return TestResult(
+                success=False,
+                message="请求超时",
+                error="连接智谱AI API超时，请检查网络"
+            )
+        except Exception as e:
+            return TestResult(
+                success=False,
+                message="连接失败",
+                error=str(e)
+            )
+
+    @staticmethod
+    async def _test_openai(
+        api_key: str,
+        model_name: str,
+        api_endpoint: Optional[str] = None
+    ) -> TestResult:
+        """测试OpenAI API连接"""
+        endpoint = api_endpoint or "https://api.openai.com/v1/chat/completions"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": "Hello"}],
+            "max_tokens": 10
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+
+                if response.status_code == 200:
+                    return TestResult(success=True, message="OpenAI API连接成功！")
+                elif response.status_code == 401:
+                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key")
+                else:
+                    return TestResult(
+                        success=False,
+                        message=f"API请求失败: {response.status_code}",
+                        error=response.text[:100]
+                    )
+        except Exception as e:
+            return TestResult(success=False, message="连接失败", error=str(e))
+
+    @staticmethod
+    async def _test_anthropic(
+        api_key: str,
+        model_name: str,
+        api_endpoint: Optional[str] = None
+    ) -> TestResult:
+        """测试Anthropic API连接"""
+        endpoint = api_endpoint or "https://api.anthropic.com/v1/messages"
+
+        headers = {
+            "x-api-key": api_key,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01"
+        }
+
+        payload = {
+            "model": model_name,
+            "max_tokens": 10,
+            "messages": [{"role": "user", "content": "Hello"}]
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+
+                if response.status_code == 200:
+                    return TestResult(success=True, message="Anthropic API连接成功！")
+                elif response.status_code == 401:
+                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key")
+                else:
+                    return TestResult(
+                        success=False,
+                        message=f"API请求失败: {response.status_code}",
+                        error=response.text[:100]
+                    )
+        except Exception as e:
+            return TestResult(success=False, message="连接失败", error=str(e))
+
+    @staticmethod
+    async def _test_qwen(
+        api_key: str,
+        model_name: str,
+        api_endpoint: Optional[str] = None
+    ) -> TestResult:
+        """测试通义千问API连接"""
+        endpoint = api_endpoint or "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": "你好"}],
+            "max_tokens": 10
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+
+                if response.status_code == 200:
+                    return TestResult(success=True, message="通义千问API连接成功！")
+                elif response.status_code == 401:
+                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key")
+                else:
+                    return TestResult(
+                        success=False,
+                        message=f"API请求失败: {response.status_code}",
+                        error=response.text[:100]
+                    )
+        except Exception as e:
+            return TestResult(success=False, message="连接失败", error=str(e))
+
+    @staticmethod
+    async def _test_qianfan(
+        api_key: str,
+        model_name: str,
+        api_endpoint: Optional[str] = None
+    ) -> TestResult:
+        """测试文心一言API连接"""
+        endpoint = api_endpoint or "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions"
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": "你好"}],
+            "max_tokens": 10
+        }
+
+        # 文心一言需要从API Key中提取 Access Key 和 Secret Key
+        try:
+            # 简化测试：只检查端点是否可达
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+
+                if response.status_code == 200:
+                    return TestResult(success=True, message="文心一言API连接成功！")
+                elif response.status_code == 401:
+                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key格式")
+                else:
+                    return TestResult(
+                        success=False,
+                        message=f"API请求失败: {response.status_code}",
+                        error=response.text[:100]
+                    )
+        except Exception as e:
+            return TestResult(success=False, message="连接失败", error=str(e))

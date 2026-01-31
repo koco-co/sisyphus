@@ -13,6 +13,7 @@ from app.schemas.ai_config import (
     AIProviderConfigCreate,
     AIProviderConfigUpdate,
     AIProviderConfigResponse,
+    AIProviderConfigTest,
     TestResult,
     PRESET_CONFIGS
 )
@@ -177,3 +178,32 @@ async def list_preset_configs():
         "presets": PRESET_CONFIGS,
         "supported_types": list(PRESET_CONFIGS.keys())
     }
+
+
+@router.post("/test", response_model=TestResult)
+async def test_api_config(
+    data: AIProviderConfigTest
+):
+    """
+    测试AI配置的API连接是否有效
+
+    - **provider_type**: AI厂商类型 (openai, anthropic, glm, qwen, qianfan)
+    - **api_key**: API密钥
+    - **model_name**: 模型名称
+    - **api_endpoint**: 自定义API端点（可选）
+
+    返回测试结果，包含连接状态和错误信息（如果有）
+    """
+    try:
+        result = await AIConfigService.test_api_connection(
+            provider_type=data.provider_type.value,
+            api_key=data.api_key,
+            model_name=data.model_name,
+            api_endpoint=data.api_endpoint
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"测试API连接失败: {str(e)}"
+        )
